@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import Movies from '../../Contexts/Movies';
+import DataContext from '../../Contexts/DataContext';
 import Create from './Create';
 import List from './List';
 import axios from 'axios';
 import Edit from './Edit';
 import { authConfig } from '../../Functions/auth';
+import { useContext } from 'react';
 
 function Main() {
 
@@ -14,18 +16,8 @@ function Main() {
     const [deleteData, setDeleteData] = useState(null);
     const [modalData, setModalData] = useState(null);
     const [editData, setEditData] = useState(null);
+    const { makeMsg } = useContext(DataContext);
 
-    const [cats, setCats] = useState(null);
-
-
-
-    // READ for select
-    useEffect(() => {
-        axios.get('http://localhost:3003/server/cats', authConfig())
-            .then(res => {
-                setCats(res.data);
-            })
-    }, []);
     // READ for list
     useEffect(() => {
         axios.get('http://localhost:3003/server/movies', authConfig())
@@ -41,8 +33,9 @@ function Main() {
         axios.post('http://localhost:3003/server/movies', createData, authConfig())
             .then(res => {
                 setLastUpdate(Date.now());
+                makeMsg(res.data.text, res.data.type);
             });
-    }, [createData]);
+    }, [createData, makeMsg]);
 
     useEffect(() => {
         if (null === deleteData) {
@@ -51,8 +44,9 @@ function Main() {
         axios.delete('http://localhost:3003/server/movies/' + deleteData.id, authConfig())
             .then(res => {
                 setLastUpdate(Date.now());
+                makeMsg(res.data.text, res.data.type);
             });
-    }, [deleteData]);
+    }, [deleteData, makeMsg]);
 
     useEffect(() => {
         if (null === editData) {
@@ -61,13 +55,13 @@ function Main() {
         axios.put('http://localhost:3003/server/movies/' + editData.id, editData, authConfig())
             .then(res => {
                 setLastUpdate(Date.now());
+                makeMsg(res.data.text, res.data.type);
             });
-    }, [editData]);
+    }, [editData, makeMsg]);
 
 
     return (
         <Movies.Provider value={{
-            cats,
             setCreateData,
             movies,
             setDeleteData,
@@ -77,10 +71,10 @@ function Main() {
         }}>
             <div className="container">
                 <div className="row">
-                    <div className="col-4">
+                    <div className="col col-lg-4 col-md-12">
                         <Create />
                     </div>
-                    <div className="col-8">
+                    <div className="col col-lg-8 col-md-12">
                         <List />
                     </div>
                 </div>
@@ -89,5 +83,4 @@ function Main() {
         </Movies.Provider>
     )
 }
-
 export default Main;

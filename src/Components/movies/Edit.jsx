@@ -6,7 +6,6 @@ function Edit() {
 
     const [title, setTitle] = useState('');
     const [price, setPrice] = useState('');
-    const [cat, setCat] = useState(0);
     const fileInput = useRef();
     const [photoPrint, setPhotoPrint] = useState(null);
     const [deletePhoto, setDeletePhoto] = useState(false);
@@ -19,13 +18,12 @@ function Edit() {
             })
     }
 
-    const { setEditData, cats, modalData, setModalData } = useContext(Movies);
+    const { setEditData, modalData, setModalData } = useContext(Movies);
 
     const edit = () => {
         setEditData({
             title,
             price: parseFloat(price),
-            cat_id: parseInt(cat),
             id: modalData.id,
             deletePhoto: deletePhoto ? 1 : 0,
             image: photoPrint
@@ -40,7 +38,6 @@ function Edit() {
         }
         setTitle(modalData.title);
         setPrice(modalData.price);
-        setCat(modalData.cat_id);
         setPhotoPrint(modalData.image);
         setDeletePhoto(false);
     }, [modalData])
@@ -68,15 +65,6 @@ function Edit() {
                             <div className="mb-3">
                                 <label className="form-label">Movie Price</label>
                                 <input type="text" className="form-control" value={price} onChange={e => setPrice(e.target.value)} />
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Cats</label>
-                                <select className="form-select" value={cat} onChange={e => setCat(e.target.value)}>
-                                    <option value={0} disabled>Choose from list</option>
-                                    {
-                                        cats?.map(c => <option key={c.id} value={c.id}>{c.title}</option>)
-                                    }
-                                </select>
                             </div>
                             <div className="mb-3">
                                 <label className="form-label">Movie Image</label>

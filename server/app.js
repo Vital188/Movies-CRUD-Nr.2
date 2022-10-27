@@ -19,7 +19,7 @@ const con = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: "",
-    database: "ruoniu_filmai",
+    database: "ruoniu_filmai_3",
 });
 
 ////////////////////LOGIN/////////////////
@@ -44,7 +44,7 @@ const doAuth = function(req, res, next) {
                 }
             }
         );
-    } else if (0 === req.url.indexOf('/login-check') || 0 === req.url.indexOf('/login')) {
+    } else if (0 === req.url.indexOf('/login-check') || 0 === req.url.indexOf('/login') || 0 === req.url.indexOf('/register')) {
         next();
     } else { // fron
         const sql = `
@@ -106,49 +106,50 @@ app.post("/login", (req, res) => {
     con.query(sql, [key, req.body.user, md5(req.body.pass)], (err, result) => {
         if (err) throw err;
         if (!result.affectedRows) {
-            res.send({ msg: 'error', key: '' });
+            res.status(401).send({ msg: 'error', key: '' });
         } else {
-            res.send({ msg: 'ok', key });
+            res.send({ msg: 'ok', key, text: 'Good to see you ' + req.body.user + ' again.', type: 'info' });
         }
+    });
+});
+
+app.post("/register", (req, res) => {
+    const key = uuid.v4();
+    const sql = `
+    INSERT INTO users (name, psw, session)
+    VALUES (?, ?, ?)
+  `;
+    con.query(sql, [req.body.name, md5(req.body.pass), key], (err, result) => {
+        if (err) throw err;
+        res.send({ msg: 'ok', key, text: 'Welcome!', type: 'info' });
     });
 });
 
 ///////////////////END////////////////////
 
+
 //CREATE
-app.post("/server/cats", (req, res) => {
-    const sql = `
-    INSERT INTO cats (title)
-    VALUES (?)
-    `;
-    con.query(sql, [req.body.title], (err, result) => {
-        if (err) throw err;
-        res.send(result);
-    });
-});
 app.post("/server/movies", (req, res) => {
     const sql = `
-    INSERT INTO movies (title, price, cat_id, image)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO movies (title, price, image)
+    VALUES (?, ?, ?)
     `;
-    con.query(sql, [req.body.title, req.body.price, req.body.cat_id, req.body.image], (err, result) => {
+    con.query(sql, [req.body.title, req.body.price, req.body.image], (err, result) => {
         if (err) throw err;
-        res.send(result);
+        res.send({ msg: 'OK', text: 'New movie was added.', type: 'success' });
+    });
+});
+app.post("/home/comments/:id", (req, res) => {
+    const sql = `
+    INSERT INTO comments (post, movie_id)
+    VALUES (?, ?)
+    `;
+    con.query(sql, [req.body.post, req.params.id], (err, result) => {
+        if (err) throw err;
+        res.send({ msg: 'OK', text: 'Thanks, for commenting.', type: 'info' });
     });
 });
 
-// READ (all)
-app.get("/server/cats", (req, res) => {
-    const sql = `
-    SELECT id, title
-    FROM cats
-    ORDER BY id DESC
-    `;
-    con.query(sql, (err, result) => {
-        if (err) throw err;
-        res.send(result);
-    });
-});
 // READ (all)
 app.get("/server/movies", (req, res) => {
     const sql = `
@@ -163,10 +164,23 @@ app.get("/server/movies", (req, res) => {
 });
 app.get("/home/movies", (req, res) => {
     const sql = `
-    SELECT m.*, c.title AS catTitle, c.id AS cid
+    SELECT m.*, c.id AS cid, c.post
     FROM movies AS m
-    INNER JOIN cats AS c
-    ON m.cat_id = c.id
+    LEFT JOIN comments AS c
+    ON c.movie_id = m.id
+    ORDER BY m.title
+    `;
+    con.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send(result);
+    });
+});
+app.get("/server/movies/wc", (req, res) => {
+    const sql = `
+    SELECT m.*, c.id AS cid, c.post
+    FROM movies AS m
+    INNER JOIN comments AS c
+    ON c.movie_id = m.id
     ORDER BY m.title
     `;
     con.query(sql, (err, result) => {
@@ -176,17 +190,8 @@ app.get("/home/movies", (req, res) => {
 });
 
 
+
 //DELETE
-app.delete("/server/cats/:id", (req, res) => {
-    const sql = `
-    DELETE FROM cats
-    WHERE id = ?
-    `;
-    con.query(sql, [req.params.id], (err, result) => {
-        if (err) throw err;
-        res.send(result);
-    });
-});
 app.delete("/server/movies/:id", (req, res) => {
     const sql = `
     DELETE FROM movies
@@ -194,23 +199,22 @@ app.delete("/server/movies/:id", (req, res) => {
     `;
     con.query(sql, [req.params.id], (err, result) => {
         if (err) throw err;
-        res.send(result);
+        res.send({ msg: 'OK', text: 'The movie was deleted.', type: 'info' });
+    });
+});
+app.delete("/server/comments/:id", (req, res) => {
+    const sql = `
+    DELETE FROM comments
+    WHERE id = ?
+    `;
+    con.query(sql, [req.params.id], (err, result) => {
+        if (err) throw err;
+        res.send({ msg: 'OK', text: 'Bad comment was deleted.', type: 'info' });
     });
 });
 
 
 //EDIT
-app.put("/server/cats/:id", (req, res) => {
-    const sql = `
-    UPDATE cats
-    SET title = ?
-    WHERE id = ?
-    `;
-    con.query(sql, [req.body.title, req.params.id], (err, result) => {
-        if (err) throw err;
-        res.send(result);
-    });
-});
 app.put("/home/movies/:id", (req, res) => {
     const sql = `
     UPDATE movies
@@ -222,7 +226,7 @@ app.put("/home/movies/:id", (req, res) => {
     `;
     con.query(sql, [req.body.rate, req.params.id], (err, result) => {
         if (err) throw err;
-        res.send(result);
+        res.send({ msg: 'OK', text: 'Thanks, for your vote.', type: 'info' });
     });
 });
 app.put("/server/movies/:id", (req, res) => {
@@ -231,28 +235,28 @@ app.put("/server/movies/:id", (req, res) => {
     if (req.body.deletePhoto) {
         sql = `
         UPDATE movies
-        SET title = ?, price = ?, cat_id = ?, image = null
+        SET title = ?, price = ?, image = null
         WHERE id = ?
         `;
-        r = [req.body.title, req.body.price, req.body.cat_id, req.params.id];
+        r = [req.body.title, req.body.price, req.params.id];
     } else if (req.body.image) {
         sql = `
         UPDATE movies
-        SET title = ?, price = ?, cat_id = ?, image = ?
+        SET title = ?, price = ?, image = ?
         WHERE id = ?
         `;
-        r = [req.body.title, req.body.price, req.body.cat_id, req.body.image, req.params.id];
+        r = [req.body.title, req.body.price, req.body.image, req.params.id];
     } else {
         sql = `
         UPDATE movies
-        SET title = ?, price = ?, cat_id = ?
+        SET title = ?, price = ?
         WHERE id = ?
         `;
-        r = [req.body.title, req.body.price, req.body.cat_id, req.params.id]
+        r = [req.body.title, req.body.price, req.params.id]
     }
     con.query(sql, r, (err, result) => {
         if (err) throw err;
-        res.send(result);
+        res.send({ msg: 'OK', text: 'The movie was edited.', type: 'success' });
     });
 });
 

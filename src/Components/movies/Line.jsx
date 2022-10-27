@@ -3,7 +3,7 @@ import Movies from '../../Contexts/Movies';
 
 function Line({ movie }) {
 
-    const { setDeleteData, setModalData, cats } = useContext(Movies);
+    const { setDeleteData, setModalData } = useContext(Movies);
 
     return (
         <li className="list-group-item">
@@ -23,9 +23,6 @@ function Line({ movie }) {
                     </div>
                     <div className="line__content__info">
                         {movie.rating ?? 'no rating'}
-                    </div>
-                    <div className="line__content__info">
-                        {cats.find(c => c.id === movie.cat_id)?.title}
                     </div>
                 </div>
                 <div className="line__buttons">

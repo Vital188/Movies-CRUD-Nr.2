@@ -1,4 +1,5 @@
 import { useState, useContext, useRef } from 'react';
+import DataContext from '../../Contexts/DataContext';
 import Movies from '../../Contexts/Movies';
 import getBase64 from '../../Functions/getBase64';
 
@@ -6,10 +7,10 @@ function Create() {
 
     const [title, setTitle] = useState('');
     const [price, setPrice] = useState('');
-    const [cat, setCat] = useState(0);
     const fileInput = useRef();
 
-    const { setCreateData, cats } = useContext(Movies);
+    const { setCreateData } = useContext(Movies);
+    const {makeMsg} = useContext(DataContext);
 
     const [photoPrint, setPhotoPrint] = useState(null);
 
@@ -22,15 +23,28 @@ function Create() {
     }
 
     const add = () => {
+        if (title.length === 0 || title.length > 50) {
+            makeMsg('Invalid title', 'error');
+            return;
+        }
+        if (price.replace(/[^\d.]/, '') !== price) {
+            makeMsg('Invalid price', 'error');
+            return;
+        }
+        if (parseFloat(price) > 99.99) {
+            makeMsg('Max price is 99.99', 'error');
+            return;
+        }
+
+
+
         setCreateData({
             title,
             price: parseFloat(price),
-            cat_id: parseInt(cat),
             image: photoPrint
         });
         setTitle('');
         setPrice('');
-        setCat(0);
         setPhotoPrint(null);
         fileInput.current.value = null;
     }
@@ -46,15 +60,6 @@ function Create() {
                 <div className="mb-3">
                     <label className="form-label">Movie Price</label>
                     <input type="text" className="form-control" value={price} onChange={e => setPrice(e.target.value)} />
-                </div>
-                <div className="mb-3">
-                    <label className="form-label">Category</label>
-                    <select className="form-select" value={cat} onChange={e => setCat(e.target.value)}>
-                        <option value={0} disabled>Choose from list</option>
-                        {
-                            cats?.map(c => <option key={c.id} value={c.id}>{c.title}</option>)
-                        }
-                    </select>
                 </div>
                 <div className="mb-3">
                     <label className="form-label">Movie Image</label>
